@@ -1,0 +1,60 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: app-server-deployment
+  labels:
+    app: app-server
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: app-server
+  template:
+    metadata:
+      labels:
+        app: app-server
+    spec:
+      containers:
+        - name: app-server
+          image: w00dson/onahrestaurant-server
+          ports:
+            - containerPort: 3000
+          env:
+            - name: MONGO_DB_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: mongodb-config
+                  key: mongo-url
+            - name: MONGO_DB_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: app-secret
+                  key: mongo-user
+            - name: MONGO_DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: app-secret
+                  key: mongo-password
+            - name: APP_SECRET_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: app-secret
+                  key: app-secret-key
+            - name: PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: mongodb-config
+                  key: port
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: app-server-service
+spec:
+  type: LoadBalancer
+  selector:
+    app.kubernetes.io/name: app-server
+  ports:
+    - protocol: TCP
+      port: 3000
+      targetPort: 3000
